@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: php-app
-          path: .https://github.com/shisui04-rgb/galaxy.git # Specify the path to the files you want to upload
+          path: .https://github.com/shisui04-rgb/galaxy/blob/main/Galaxy.html # Specify the path to the files you want to upload
 
   deploy:
     runs-on: ubuntu-latest
@@ -54,4 +54,5 @@ jobs:
         with:
           app-name: 'Galaxy'
           publish-profile: ${{ secrets.Galaxy - Web Deploy }}
-          package: .https://raw.githubusercontent.com/shisui04-rgb/galaxy/refs/heads/main/Galaxy.html
+          package: .https://github.com/shisui04-rgb/galaxy/blob/main/Galaxy.html
+
