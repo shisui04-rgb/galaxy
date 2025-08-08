@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Galaxy Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #000000 0%, #0c0c20 100%);
+            font-family: 'Space Mono', monospace;
+            color: #ffffff;
+            perspective: 1000px;
+        }
+        
+        #galaxy-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background-color: white;
+            pointer-events: none;
+            transition: transform 0.1s ease-out;
+        }
+        
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(30px);
+            opacity: 0.4;
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+        
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+        }
+        
+        #galaxy-center {
+            position: absolute;
+            width: 30vmin;
+            height: 30vmin;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff8c00 0%, #ff4500 70%);
+            box-shadow: 0 0 150px #ff8c00, 0 0 300px rgba(255, 140, 0, 0.5);
+            z-index: 10;
+            animation: sunPulse 5s infinite alternate;
+        }
+
+        @keyframes sunPulse {
+            0% {
+                box-shadow: 0 0 150px #ff8c00, 0 0 300px rgba(255, 140, 0, 0.5);
+            }
+            100% {
+                box-shadow: 0 0 200px #ff8c00, 0 0 400px rgba(255, 140, 0, 0.7);
+            }
+        }
+        
+        .spiral-arm {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 0;
+            pointer-events: none;
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 100;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin: 0 auto;
+            width: fit-content;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Mono', monospace;
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        #info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            z-index: 100;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #a166ff;
+        }
+        
+        p {
+            margin: 10px 0 0 0;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div id="galaxy-container">
+        <div id="galaxy-center"></div>
+        
+        <div class="bg-image">
+            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/bd90035f-9243-45e3-aeba-c02ca7ab0a61.png" alt="Cosmic background with distant stars and subtle blue and purple nebula clouds covering the entire space" />
+        </div>
+        
+        <div id="stars-container"></div>
+        <div id="nebulas-container"></div>
+        <div id="planets-container"></div>
+        <div id="spiral-arms-container"></div>
+        
+        <div id="info-panel">
+            <h1>Galaxy Explorer</h1>
+            <p>This interactive visualization shows a realistic spiral galaxy with thousands of stars, colorful nebulae, and orbiting planets.</p>
+            <p>Use mouse movement to distort the galaxy shape.</p>
+        </div>
+        
+        <div id="controls">
+            <button id="zoom-in">Zoom In</button>
+            <button id="zoom-out">Zoom Out</button>
+            <button id="reset-view">Reset View</button>
+            <button id="toggle-animation">Pause Animation</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const config = {
+            starCount: 2000,
+            planetCount: 8,
+            nebulaCount: 15,
+            armCount: 4,
+            rotationSpeed: 0.0005,
+            mouseInfluence: 0.3,
+            baseArmWidth: 0.075,
+            baseArmTightness: 0.5,
+            baseArmTwist: 0.2,
+        };
+        
+        // State
+        let animationRunning = true;
+        let zoomLevel = 1;
+        let mouseX = 0;
+        let mouseY = 0;
+        let distortionX = 0;
+        let distortionY = 0;
+        
+        // DOM Elements
+        const starsContainer = document.getElementById('stars-container');
+        const nebulasContainer = document.getElementById('nebulas-container');
+        const planetsContainer = document.getElementById('planets-container');
+        const armsContainer = document.getElementById('spiral-arms-container');
+        const galaxyContainer = document.getElementById('galaxy-container');
+        
+        // Initialize galaxy
+        function initGalaxy() {
+            createStars();
+            createNebulas();
+            createPlanets();
+            createSpiralArms();
+            
+            // Setup event listeners
+            galaxyContainer.addEventListener('mousemove', handleMouseMove);
+            document.getElementById('zoom-in').addEventListener('click', () => updateZoom(1.2));
+            document.getElementById('zoom-out').addEventListener('click', () => updateZoom(0.8));
+            document.getElementById('reset-view').addEventListener('click', resetView);
+            document.getElementById('toggle-animation').addEventListener('click', toggleAnimation);
+        }
+        
+        // Create stars
+        function createStars() {
+            for (let i = 0; i < config.starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // Size (0.5px to 3px)
+                const size = Math.random() * 2.5 + 0.5;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                // Color (mostly white with some yellow/blue stars)
+                const colorVariation = Math.random();
+                if (colorVariation < 0.8) {
+                    star.style.backgroundColor = 'white';
+                } else if (colorVariation < 0.9) {
+                    star.style.backgroundColor = '#f8f4a6';
+                } else {
+                    star.style.backgroundColor = '#a6c8f8';
+                }
+                
+                // Brightness (some brighter, some dimmer)
+                star.style.opacity = Math.random() * 0.8 + 0.2;
+                
+                // Position and save initial position as data attributes
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.pow(Math.random(), 2) * 0.8; // Closer to center
+                const baseX = Math.cos(angle) * distance;
+                const baseY = Math.sin(angle) * distance;
+                
+                star.dataset.baseX = baseX;
+                star.dataset.baseY = baseY;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Create nebulae
+        function createNebulas() {
+            for (let i = 0; i < config.nebulaCount; i++) {
+                const nebula = document.createElement('div');
+                nebula.className = 'nebula';
+                
+                // Size (large)
+                const size = Math.random() * 300 + 100;
+                nebula.style.width = `${size}px`;
+                nebula.style.height = `${size}px`;
+                
+                // Color (blue, purple, red nebulae)
+                const colorChoice = Math.floor(Math.random() * 3);
+                if (colorChoice === 0) {
+                    nebula.style.backgroundColor = 'rgba(100, 100, 255, 0.3)';
+                } else if (colorChoice === 1) {
+                    nebula.style.backgroundColor = 'rgba(150, 50, 255, 0.3)';
+                } else {
+                    nebula.style.backgroundColor = 'rgba(255, 50, 100, 0.3)';
+                }
+                
+                // Position (spread mostly in the galactic plane)
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.pow(Math.random(), 1.5) * 0.6;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance * (Math.random() * 0.3 + 0.7);
+                
+                nebula.dataset.baseX = x;
+                nebula.dataset.baseY = y;
+                nebula.dataset.speed = Math.random() * 0.2 + 0.1;
+                
+                nebulasContainer.appendChild(nebula);
+            }
+        }
+        
+        // Create planets
+        function createPlanets() {
+            for (let i = 0; i < config.planetCount; i++) {
+                const planet = document.createElement('div');
+                planet.className = 'planet';
+                
+                // Size (small to medium)
+                const size = Math.random() * 15 + 5;
+                planet.style.width = `${size}px`;
+                planet.style.height = `${size}px`;
+                
+                // Color (various planet colors)
+                const hue = Math.floor(Math.random() * 360);
+                planet.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
+                
+                // Position (orbits with different distances)
+                const orbitDistance = Math.random() * 0.4 + 0.3;
+                const orbitSpeed = (Math.random() * 0.003 + 0.001) * (Math.random() > 0.5 ? 1 : -1);
+                const startingAngle = Math.random() * Math.PI * 2;
+                
+                planet.dataset.orbitDistance = orbitDistance;
+                planet.dataset.orbitSpeed = orbitSpeed;
+                planet.dataset.angle = startingAngle;
+                planet.dataset.size = size;
+                
+                planetsContainer.appendChild(planet);
+            }
+        }
+        
+        // Create spiral arms
+        function createSpiralArms() {
+            for (let arm = 0; arm < config.armCount; arm++) {
+                const armStartAngle = (arm * (Math.PI * 2 / config.armCount)) - Math.PI/4;
+                
+                for (let i = 0; i < 50; i++) {
+                    const angle = armStartAngle + i * 0.12;
+                    const distance = 0.05 + i * 0.015;
+                    
+                    const armSegment = document.createElement('div');
+                    armSegment.className = 'star';
+                    armSegment.style.width = '2px';
+                    armSegment.style.height = '2px';
+                    armSegment.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                    
+                    armSegment.dataset.armIndex = arm;
+                    armSegment.dataset.armPosition = i;
+                    armSegment.dataset.angle = angle;
+                    armSegment.dataset.distance = distance;
+                    
+                    armsContainer.appendChild(armSegment);
+                }
+            }
+        }
+        
+        // Handle mouse movement for interactive effects
+        function handleMouseMove(e) {
+            const rect = galaxyContainer.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+            mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+            
+            // Apply some smoothing to the distortion effect
+            distortionX += (mouseX - distortionX) * 0.1;
+            distortionY += (mouseY - distortionY) * 0.1;
+        }
+        
+        // Update galaxy elements position based on current state
+        function updateGalaxy(timestamp) {
+            const rotationAngle = animationRunning ? timestamp * config.rotationSpeed : 0;
+            
+            // Update stars
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                if (star.dataset.armIndex !== undefined) {
+                    // Handle spiral arm stars differently
+                    const armIndex = parseInt(star.dataset.armIndex);
+                    const armPosition = parseInt(star.dataset.armPosition);
+                    const baseAngle = parseFloat(star.dataset.angle);
+                    const baseDistance = parseFloat(star.dataset.distance);
+                    
+                    // Apply spiral pattern
+                    const angle = baseAngle + rotationAngle * (armIndex % 2 === 0 ? 1 : -1) * 0.5;
+                    const distance = baseDistance;
+                    
+                    // Calculate position
+                    let x = Math.cos(angle) * distance;
+                    let y = Math.sin(angle) * distance;
+                    
+                    // Apply distortion
+                    x += distortionX * config.mouseInfluence * 0.5;
+                    y += distortionY * config.mouseInfluence * 0.5;
+                    
+                    // Position star
+                    star.style.left = `${50 + x * 100 * zoomLevel}%`;
+                    star.style.top = `${50 + y * 100 * zoomLevel}%`;
+                    
+                } else {
+                    // Regular stars
+                    const baseX = parseFloat(star.dataset.baseX);
+                    const baseY = parseFloat(star.dataset.baseY);
+                    
+                    // Calculate distance from center for dynamic effects
+                    const distanceFromCenter = Math.sqrt(baseX * baseX + baseY * baseY);
+                    
+                    // Add some subtle individual movement to stars
+                    const individualOffsetX = Math.sin(timestamp * 0.0005 + baseX * 10) * 0.005;
+                    const individualOffsetY = Math.cos(timestamp * 0.0005 + baseY * 10) * 0.005;
+                    
+                    // Apply rotation (faster closer to center) with mouse distortion
+                    const rotationFactor = 1 - distanceFromCenter;
+                    let x = baseX * Math.cos(rotationAngle * rotationFactor) - baseY * Math.sin(rotationAngle * rotationFactor);
+                    let y = baseX * Math.sin(rotationAngle * rotationFactor) + baseY * Math.cos(rotationAngle * rotationFactor);
+                    
+                    // Add mouse distortion (stronger effect towards the edges)
+                    x += distortionX * config.mouseInfluence * distanceFromCenter;
+                    y += distortionY * config.mouseInfluence * distanceFromCenter;
+                    
+                    // Add individual movement
+                    x += individualOffsetX;
+                    y += individualOffsetY;
+                    
+                    // Position star
+                    star.style.left = `${50 + x * 100 * zoomLevel}%`;
+                    star.style.top = `${50 + y * 100 * zoomLevel}%`;
+                    
+                    // Add twinkling effect by varying opacity
+                    star.style.opacity = 0.2 + 0.6 * (Math.sin(timestamp * 0.001 + baseX * 100) * 0.5 + 0.5);
+                }
+            });
+            
+            // Update nebulae
+            const nebulas = document.querySelectorAll('.nebula');
+            nebulas.forEach(nebula => {
+                const baseX = parseFloat(nebula.dataset.baseX);
+                const baseY = parseFloat(nebula.dataset.baseY);
+                const speed = parseFloat(nebula.dataset.speed);
+                
+                // Nebulae rotate at different speeds and drift slowly outward
+                const angle = Math.atan2(baseY, baseX) + rotationAngle * speed;
+                const distance = Math.sqrt(baseX * baseX + baseY * baseY);
+                
+                // Calculate position with some outward drift
+                let x = Math.cos(angle) * (distance * (1 + rotationAngle * 0.0001));
+                let y = Math.sin(angle) * (distance * (1 + rotationAngle * 0.0001));
+                
+                // Position nebula
+                nebula.style.left = `${50 + x * 100 * zoomLevel}%`;
+                nebula.style.top = `${50 + y * 100 * zoomLevel}%`;
+                
+                // Subtle pulsing effect
+                const pulse = Math.sin(timestamp * 0.0003) * 0.05 + 1;
+                nebula.style.transform = `scale(${pulse})`;
+            });
+            
+            // Update planets
+            const planets = document.querySelectorAll('.planet');
+            planets.forEach(planet => {
+                const distance = parseFloat(planet.dataset.orbitDistance);
+                const speed = parseFloat(planet.dataset.orbitSpeed);
+                let angle = parseFloat(planet.dataset.angle) + (animationRunning ? speed : 0);
+                
+                // Save updated angle
+                planet.dataset.angle = angle;
+                
+                // Calculate position
+                let x = Math.cos(angle) * distance;
+                let y = Math.sin(angle) * distance * 0.8; // Slightly elliptical orbits
+                
+                // Position planet
+                planet.style.left = `${50 + x * 100 * zoomLevel}%`;
+                planet.style.top = `${50 + y * 100 * zoomLevel}%`;
+                
+                // Add rotation to planet
+                const planetSize = parseFloat(planet.dataset.size);
+                planet.style.transform = `rotate(${angle * 10}deg)`;
+                
+                // Add moon to some planets
+                if (planet.dataset.hasMoon !== 'true' && Math.random() > 0.7) {
+                    planet.dataset.hasMoon = 'true';
+                    const moon = document.createElement('div');
+                    moon.className = 'star';
+                    moon.style.width = `${planetSize / 3}px`;
+                    moon.style.height = `${planetSize / 3}px`;
+                    moon.style.backgroundColor = '#dddddd';
+                    moon.dataset.planetId = planet.dataset.planetId || Math.random().toString(36).substr(2, 9);
+                    moon.dataset.orbitDistance = planetSize / 2 + 5;
+                    moon.dataset.orbitSpeed = speed * 4;
+                    moon.dataset.angle = Math.random() * Math.PI * 2;
+                    planet.appendChild(moon);
+                }
+                
+                // Update moons if any
+                const moons = planet.querySelectorAll('.star');
+                moons.forEach(moon => {
+                    const moonDistance = parseFloat(moon.dataset.orbitDistance);
+                    const moonSpeed = parseFloat(moon.dataset.orbitSpeed);
+                    let moonAngle = parseFloat(moon.dataset.angle) + (animationRunning ? moonSpeed : 0);
+                    
+                    moon.dataset.angle = moonAngle;
+                    
+                    const moonX = Math.cos(moonAngle) * moonDistance;
+                    const moonY = Math.sin(moonAngle) * moonDistance;
+                    
+                    moon.style.left = `${moonX}px`;
+                    moon.style.top = `${moonY}px`;
+                });
+            });
+            
+            // Continuous animation
+            requestAnimationFrame(updateGalaxy);
+        }
+        
+        // Zoom functions
+        function updateZoom(factor) {
+            zoomLevel *= factor;
+            galaxyContainer.style.transform = `scale(${zoomLevel})`;
+        }
+        
+        function resetView() {
+            zoomLevel = 1;
+            galaxyContainer.style.transform = 'scale(1)';
+            distortionX = 0;
+            distortionY = 0;
+        }
+        
+        function toggleAnimation() {
+            animationRunning = !animationRunning;
+            document.getElementById('toggle-animation').textContent = 
+                animationRunning ? 'Pause Animation' : 'Resume Animation';
+        }
+        
+        // Start everything
+        window.onload = function() {
+            initGalaxy();
+            requestAnimationFrame(updateGalaxy);
+        };
+    </script>
+</body>
+</html>
+
