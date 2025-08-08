@@ -31,7 +31,7 @@ jobs:
         run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: php-app
           path: path:shisui04-rgb/galaxy/ # Specify the path to the files you want to upload
@@ -45,16 +45,17 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: action/download-artifact@v3
+        uses: action/download-artifact@v4
         with:
           name: php-app
 
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v4
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'Galaxy'
           publish-profile: ${{ secrets.Galaxy}}
           package:path: shisui04-rgb/galaxy/
+
 
 
 
