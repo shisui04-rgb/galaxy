@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: php-app
-          path: path:shisui04-rgb/galaxy/ # Specify the path to the files you want to upload
+          path: shisui04-rgb/galaxy/ # Correct: do NOT prefix with "path:"
 
   deploy:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: action/download-artifact@v4
+        uses: actions/download-artifact@v4
         with:
           name: php-app
 
@@ -53,15 +53,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'Galaxy'
-          publish-profile: ${{ secrets.Galaxy}}
-          package:path: shisui04-rgb/galaxy/
-
-
-
-
-
-
-
-
-
-
+          publish-profile: ${{ secrets.Galaxy }}
+          package: php-app # This matches the artifact name and will point to the folder just downloaded
