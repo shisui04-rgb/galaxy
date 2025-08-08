@@ -53,7 +53,8 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'Galaxy'
-          publish-profile: ${{ secrets.Galaxy - Web Deploy }}
+          publish-profile: ${{ secrets.Galaxy Web Deploy }}
           package: ./shisui04-rgb/galaxy/blob/main/Galaxy.html
+
 
 
