@@ -45,16 +45,17 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: azure/download-artifact@v4
+        uses: action/download-artifact@v4
         with:
           name: php-app
 
       - name: 'Deploy to Azure Web App'
-        uses: action/webapps-deploy@v4
+        uses: azure/webapps-deploy@v4
         with:
           app-name: 'Galaxy'
           publish-profile: ${{ secrets.Galaxy}}
           package: ./shisui04-rgb/galaxy/blob/main/Galaxy.html
+
 
 
 
