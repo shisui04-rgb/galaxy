@@ -4,15 +4,39 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v3
-      - name: 'Deploy to Azure Web App'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Install Composer dependencies if composer.json exists
+        run: |
+          if [ -f "composer.json" ]; then
+            composer validate --no-check-publish
+            composer install --prefer-dist --no-progress
+          fi
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: <Galaxy>
-          publish-profile: ${{ Galaxy - Web Deploy}}
-          package: .
+          app-name: Galaxy               # Replace with your Azure Web App name
+          publish-profile: ${{ secrets.Galaxy - Web Deploy}}
+          package: https://github.com/shisui04-rgb/galaxy/blob/main/Galaxy.html                      # Path to deploy (current directory)
