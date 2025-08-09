@@ -33,7 +33,7 @@ jobs:
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: php-app
+          name: galaxy.html
           path: shisui04-rgb/galaxy/ # Correct: do NOT prefix with "path:"
 
   deploy:
@@ -47,7 +47,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: php-app
+          name: galaxy.html
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
@@ -55,3 +55,4 @@ jobs:
           app-name: 'Galaxy'
           publish-profile: ${{ secrets.Galaxy }}
           package: php-app # This matches the artifact name and will point to the folder just downloaded
+
