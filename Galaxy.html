@@ -47,30 +47,117 @@
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
             pointer-events: none;
         }
-        
-        #galaxy-center {
-            position: absolute;
-            width: 30vmin;
-            height: 30vmin;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background: radial-gradient(circle, #ff8c00 0%, #ff4500 70%);
-            box-shadow: 0 0 150px #ff8c00, 0 0 300px rgba(255, 140, 0, 0.5);
-            z-index: 10;
-            animation: sunPulse 5s infinite alternate;
-        }
+        /* Container for the animated flames */
+#solar-flames {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+}
 
-        @keyframes sunPulse {
-            0% {
-                box-shadow: 0 0 150px #ff8c00, 0 0 300px rgba(255, 140, 0, 0.5);
-            }
-            100% {
-                box-shadow: 0 0 200px #ff8c00, 0 0 400px rgba(255, 140, 0, 0.7);
-            }
-        }
-        
+/* Each flame element */
+.flame {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 10px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(255, 200, 50, 0.9), rgba(255, 100, 0, 0.1));
+  transform-origin: center bottom;
+  opacity: 0.7;
+  border-radius: 50%;
+  animation: flameFlicker 1.5s infinite ease-in-out;
+}
+
+/* Keyframes for flickering flame motion */
+@keyframes flameFlicker {
+  0% {
+    transform: translate(-50%, 0) scaleY(1) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -20px) scaleY(1.5) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 0) scaleY(1) rotate(-10deg);
+    opacity: 0.5;
+  }
+}       
+#galaxy-center {
+  position: absolute;
+  width: 30vmin;
+  height: 30vmin;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #ffff66, #ff8c00 60%, #ff4500 90%);
+  box-shadow:
+    0 0 60px rgba(255, 204, 0, 0.6),
+    0 0 120px rgba(255, 120, 0, 0.5),
+    0 0 180px rgba(255, 80, 0, 0.4);
+  z-index: 10;
+  animation: sunPulse 5s ease-in-out infinite alternate;
+  overflow: visible;
+}
+
+#galaxy-center::before,
+#galaxy-center::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  background: radial-gradient(circle, rgba(255, 200, 0, 0.3), transparent 70%);
+  animation: solarFlare 4s infinite ease-in-out;
+  transform: scale(1.2);
+  z-index: -1;
+}
+
+#galaxy-center::after {
+  animation-delay: 2s;
+  transform: scale(1.4);
+  background: radial-gradient(circle, rgba(255, 100, 0, 0.2), transparent 70%);
+}
+
+@keyframes sunPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow:
+      0 0 60px rgba(255, 204, 0, 0.6),
+      0 0 120px rgba(255, 120, 0, 0.5),
+      0 0 180px rgba(255, 80, 0, 0.4);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow:
+      0 0 80px rgba(255, 255, 0, 0.7),
+      0 0 160px rgba(255, 100, 0, 0.6),
+      0 0 220px rgba(255, 50, 0, 0.5);
+  }
+}
+
+@keyframes solarFlare {
+  0% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.5) rotate(180deg);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.2) rotate(360deg);
+    opacity: 0.6;
+  }
+}       
         .spiral-arm {
             position: absolute;
             top: 50%;
@@ -149,20 +236,20 @@
         <div id="nebulas-container"></div>
         <div id="planets-container"></div>
         <div id="spiral-arms-container"></div>
-        
-        <div id="info-panel">
-            <h1>Galaxy Explorer</h1>
-            <p>This interactive visualization shows a realistic spiral galaxy with thousands of stars, colorful nebulae, and orbiting planets.</p>
-            <p>Use mouse movement to distort the galaxy shape.</p>
-        </div>
-        
-        <div id="controls">
-            <button id="zoom-in">Zoom In</button>
-            <button id="zoom-out">Zoom Out</button>
-            <button id="reset-view">Reset View</button>
-            <button id="toggle-animation">Pause Animation</button>
-        </div>
     </div>
+<!-- Fixed UI -->
+  <div id="info-panel">
+    <h1>Galaxy Explorer</h1>
+    <p>This interactive visualization shows a realistic spiral galaxy with thousands of stars, colorful nebulae, and orbiting planets.</p>
+    <p>Use mouse movement to distort the galaxy shape.</p>
+  </div>
+
+  <div id="controls">
+    <button id="zoom-in">Zoom In</button>
+    <button id="zoom-out">Zoom Out</button>
+    <button id="reset-view">Reset View</button>
+    <button id="toggle-animation">Pause Animation</button>
+  </div>
 
     <script>
         // Configuration
